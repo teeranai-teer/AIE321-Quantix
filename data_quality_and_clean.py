@@ -1,60 +1,80 @@
-import pandas as pd
 from sqlalchemy import create_engine, text
 
-# 1. เชื่อมต่อฐานข้อมูล PostgreSQL
 DB_URL = "postgresql://myuser:mypassword@localhost:5432/kaggle_db"
 engine = create_engine(DB_URL)
 
-print("🔍 กำลังดึงข้อมูลจากตาราง 'scbd_raw' เพื่อตรวจสอบคุณภาพ...")
-df = pd.read_sql("SELECT * FROM scbd_raw", engine)
+print("\n" + "="*60)
+print("🔍 กำลังตรวจสอบและทำความสะอาดตารางใน PostgreSQL...")
+print("="*60)
 
-# 2. รายงานตรวจสอบคุณภาพข้อมูล (Data Quality Report)
-print("\n" + "="*50)
-print("📊 รายงานคุณภาพข้อมูล (DATA QUALITY REPORT)")
-print("="*50)
-print(f"• จำนวนแถวทั้งหมด: {len(df):,} แถว")
-print(f"• จำนวนคอลัมน์ทั้งหมด: {len(df.columns)} คอลัมน์")
+with engine.begin() as conn:
+    # 1. สร้าง satellite_current_cleaned
+    conn.execute(text("DROP TABLE IF EXISTS satellite_current_cleaned;"))
+    conn.execute(text("""
+        CREATE TABLE satellite_current_cleaned AS
+        SELECT DISTINCT ON (norad_id)
+            norad_id,
+            COALESCE(NULLIF(TRIM(name), ''), 'unknown') AS name,
+            COALESCE(NULLIF(TRIM(object_type), ''), 'unknown') AS object_type,
+            COALESCE(NULLIF(TRIM(satellite_constellation), ''), 'unknown') AS satellite_constellation,
+            altitude_km,
+            COALESCE(NULLIF(TRIM(altitude_category), ''), 'unknown') AS altitude_category,
+            COALESCE(NULLIF(TRIM(orbital_band), ''), 'unknown') AS orbital_band,
+            COALESCE(NULLIF(TRIM(congestion_risk), ''), 'unknown') AS congestion_risk,
+            inclination,
+            eccentricity,
+            launch_year_estimate,
+            days_in_orbit_estimate,
+            COALESCE(NULLIF(TRIM(orbit_lifetime_category), ''), 'unknown') AS orbit_lifetime_category,
+            mean_motion,
+            epoch,
+            COALESCE(NULLIF(TRIM(data_source), ''), 'unknown') AS data_source,
+            snapshot_date,
+            COALESCE(NULLIF(TRIM(country), ''), 'unknown') AS country,
+            last_seen
+        FROM satellite_current_raw
+        WHERE altitude_km IS NOT NULL
+          AND inclination IS NOT NULL
+          AND eccentricity IS NOT NULL
+          AND mean_motion IS NOT NULL
+        ORDER BY norad_id;
+    """))
+    cur_raw = conn.execute(text("SELECT COUNT(*) FROM satellite_current_raw;")).scalar()
+    cur_clean = conn.execute(text("SELECT COUNT(*) FROM satellite_current_cleaned;")).scalar()
+    print(f"✅ 'satellite_current_cleaned' สำเร็จ! (ดิบ: {cur_raw:,} -> พร้อมใช้งาน: {cur_clean:,} แถว)")
 
-# ตรวจสอบค่าว่าง (Missing Values / NULL)
-null_counts = df.isnull().sum()
-total_nulls = null_counts.sum()
-print(f"• จำนวนค่าว่าง (NULL) ทั้งหมด: {total_nulls} จุด")
-if total_nulls > 0:
-    print(null_counts[null_counts > 0])
-
-# ตรวจสอบข้อมูลซ้ำ (Duplicates)
-dup_all = df.duplicated().sum()
-dup_id = df.duplicated(subset=["sample_id"]).sum() if "sample_id" in df.columns else 0
-print(f"• แถวที่ข้อมูลซ้ำกันทั้งหมด: {dup_all} แถว")
-print(f"• รหัส sample_id ที่ซ้ำกัน: {dup_id} แถว")
-
-# แสดงชนิดข้อมูลและช่วงค่าตัวเลข (Data Types & Summary)
-print("\n📋 โครงสร้างคอลัมน์และชนิดข้อมูล:")
-print(df.dtypes)
-
-print("\n📈 ค่าสถิติพื้นฐานของตัวแปรอารมณ์ (Summary Statistics):")
-print(df.describe().round(4))
-
-# 3. ทำความสะอาดข้อมูล (Data Cleaning)
-df_cleaned = df.copy()
-
-# ลบแถวซ้ำและค่าว่าง (ถ้ามี)
-if "sample_id" in df_cleaned.columns:
-    df_cleaned = df_cleaned.drop_duplicates(subset=["sample_id"])
-df_cleaned = df_cleaned.drop_duplicates().dropna()
-
-# แปลงคอลัมน์ข้อความ (Categorical) ให้เป็นตัวพิมพ์เล็กและตัดช่องว่างหัวท้ายให้เป็นมาตรฐานเดียวกัน
-cat_cols = ["stimulus", "action", "engagement_level", "learning_state"]
-for col in cat_cols:
-    if col in df_cleaned.columns:
-        df_cleaned[col] = df_cleaned[col].astype(str).str.strip().str.lower()
-
-# 4. บันทึกลงตารางใหม่ชื่อ 'scbd_cleaned' ใน PostgreSQL
-cleaned_table = "scbd_cleaned"
-print(f"\n💾 กำลังบันทึกข้อมูลที่ทำความสะอาดแล้วลงตาราง '{cleaned_table}'...")
-df_cleaned.to_sql(cleaned_table, engine, if_exists="replace", index=False, chunksize=5000)
-
-with engine.connect() as conn:
-    cleaned_count = conn.execute(text(f"SELECT COUNT(*) FROM {cleaned_table};")).scalar()
-
-print(f"✅ สร้างตาราง '{cleaned_table}' สำเร็จ! คงเหลือข้อมูลพร้อมใช้งาน: {cleaned_count:,} แถว")
+    # 2. สร้าง satellite_trajectory_cleaned
+    print("⏳ กำลังสร้าง 'satellite_trajectory_cleaned' จากข้อมูล 5.7 ล้านแถว...")
+    conn.execute(text("DROP TABLE IF EXISTS satellite_trajectory_cleaned;"))
+    conn.execute(text("""
+        CREATE TABLE satellite_trajectory_cleaned AS
+        SELECT DISTINCT ON (norad_id, snapshot_date)
+            norad_id,
+            COALESCE(NULLIF(TRIM(name), ''), 'unknown') AS name,
+            COALESCE(NULLIF(TRIM(object_type), ''), 'unknown') AS object_type,
+            COALESCE(NULLIF(TRIM(satellite_constellation), ''), 'unknown') AS satellite_constellation,
+            altitude_km,
+            COALESCE(NULLIF(TRIM(altitude_category), ''), 'unknown') AS altitude_category,
+            COALESCE(NULLIF(TRIM(orbital_band), ''), 'unknown') AS orbital_band,
+            COALESCE(NULLIF(TRIM(congestion_risk), ''), 'unknown') AS congestion_risk,
+            inclination,
+            eccentricity,
+            launch_year_estimate,
+            days_in_orbit_estimate,
+            COALESCE(NULLIF(TRIM(orbit_lifetime_category), ''), 'unknown') AS orbit_lifetime_category,
+            mean_motion,
+            epoch,
+            COALESCE(NULLIF(TRIM(data_source), ''), 'unknown') AS data_source,
+            snapshot_date,
+            COALESCE(NULLIF(TRIM(country), ''), 'unknown') AS country,
+            last_seen
+        FROM satellite_trajectory_raw
+        WHERE altitude_km IS NOT NULL
+          AND inclination IS NOT NULL
+          AND eccentricity IS NOT NULL
+          AND mean_motion IS NOT NULL
+        ORDER BY norad_id, snapshot_date;
+    """))
+    traj_raw = conn.execute(text("SELECT COUNT(*) FROM satellite_trajectory_raw;")).scalar()
+    traj_clean = conn.execute(text("SELECT COUNT(*) FROM satellite_trajectory_cleaned;")).scalar()
+    print(f"✅ 'satellite_trajectory_cleaned' สำเร็จ! (ดิบ: {traj_raw:,} -> พร้อมใช้งาน: {traj_clean:,} แถว)")
