@@ -8,9 +8,9 @@ AIE321 Data Pipeline Project by Team Quantix. Analyzing the Satellite Orbital Ca
 
 | หน้าที่ | ผู้รับผิดชอบ | งานที่ทำ | ไฟล์/ผลงาน |
 |---|---|---|---|
-| 1. Ingestion & Docker | มิ้น | PostgreSQL ด้วย Docker, โหลด CSV เข้า `raw_data`, GitHub, Google Cloud / Service Account | `docker-compose.yml`, `ingest.py`, `.env.example`, `README.md` |
-| 2. Transform & Pipeline | Tonn | ทำความสะอาด/สร้างฟีเจอร์/สรุปข้อมูลลง `production`, ส่งขึ้น Google Sheets, รวมเป็นคำสั่งเดียว | `transform.py`, `publish.py`, `run_pipeline.py` |
-| 3. Dashboard & Insights | แตงกวา | Looker Studio (≥ 5 กราฟ), ตอบคำถามธุรกิจ, สรุป insight | Dashboard, ส่วน Insights ในรายงาน |
+| 1. Ingestion & Docker | ณัฐนิชา | PostgreSQL ด้วย Docker, โหลด CSV เข้า `raw_data`, GitHub, Google Cloud / Service Account | `docker-compose.yml`, `ingest.py`, `.env.example`, `README.md` |
+| 2. Transform & Pipeline | ธีรนัย | ทำความสะอาด/สร้างฟีเจอร์/สรุปข้อมูลลง `production`, ส่งขึ้น Google Sheets, รวมเป็นคำสั่งเดียว | `transform.py`, `publish.py`, `run_pipeline.py` |
+| 3. Dashboard & Insights | บัณฑิตา | Looker Studio (≥ 5 กราฟ), ตอบคำถามธุรกิจ, สรุป insight | Dashboard, ส่วน Insights ในรายงาน |
 
 ## Database Architecture & Data Pipeline
 
