@@ -2,7 +2,7 @@
 
 AIE321 Data Pipeline Project by Team Quantix. Analyzing the Satellite Orbital Catalog dataset from Kaggle with Python and PostgreSQL (Docker), publishing summary tables to Google Sheets and visualizing them in Looker Studio to explore satellite orbital parameters, congestion risk, and trajectory patterns.
 
-- Dashboard (Looker Studio): _____ ใส่ link Looker Studio
+- Dashboard (Looker Studio): https://datastudio.google.com/reporting/1d6f082e-06ae-4a62-b41b-ad05b560af2f
 
 ## Team Quantix
 
