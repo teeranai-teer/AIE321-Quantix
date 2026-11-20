@@ -205,15 +205,15 @@ py -3.13 -m venv .venv
 
 | # | คำถาม | Chart | แท็บข้อมูล | Dimension / Metric |
 |---|---|---|---|---|
-| 1 | Q1 | Bar แนวนอน | `agg_country_counts`, `agg_constellation_counts` | country / n |
+| 1 | Q1 | Bar แนวนอน + Donut | `agg_country_counts`, `agg_constellation_counts` | Bar: country / n; Donut: satellite_constellation / n |
 | 2 | Q2 | 100% Stacked bar | `agg_risk_by_altitude` | altitude_category (เรียงตาม altitude_order) แยกสีตาม congestion_risk / n |
 | 3 | Q3 | Stacked area | `agg_daily_by_country` | snapshot_date แยกสีตาม country_group / objects_tracked |
 | 4 | Q4 | Line | `agg_daily_by_constellation` | snapshot_date แยกเส้นตาม satellite_constellation / avg_altitude_km |
 | 5 | Q5 | Bar + Table | `agg_orbital_band_profile` | orbital_band / median_altitude_km, median_inclination, median_period_min |
 
-ข้อควรระวัง: ในกราฟที่ 4 ความสูง BeiDou (~27,385 กม.) กับ Starlink (~459 กม.) ต่างกันมาก ให้เพิ่ม Filter control เลือกกลุ่มดาวเทียม (ค่าเริ่มต้น STARLINK GEN 1) ส่วนกราฟที่ 5 ให้ใช้มุมเอียงเป็นแท่ง เพราะความสูง GEO ทำให้แท่ง LEO สั้นจนมองไม่เห็น
+ข้อควรระวัง: ในกราฟที่ 4 ความสูง BeiDou (~27,385 กม.) กับ Starlink (~459 กม.) ต่างกันมาก dashboard จึงแสดงเฉพาะ STARLINK GEN 1 ส่วนกราฟที่ 5 ใช้มุมเอียงเป็นแท่ง เพราะความสูง GEO ทำให้แท่ง LEO สั้นจนมองไม่เห็น
 
-เพิ่ม Filter controls: `satellite_constellation`, `country_group` และ Date range control บน `snapshot_date` แชร์รายงาน: Share → Manage access → Anyone with the link → Viewer แล้วทดสอบในหน้าต่างไม่ระบุตัวตน
+Dashboard ไม่มี Filter control เพราะแต่ละกราฟอ่านจากตารางสรุปคนละตาราง (data source แยกกัน) การแชร์รายงานตั้งเป็น "ไม่เป็นสาธารณะ" (Anyone with the link) สิทธิ์ผู้ดู (Viewer) และทดสอบในหน้าต่างไม่ระบุตัวตนแล้ว
 
 ## Project Structure
 
